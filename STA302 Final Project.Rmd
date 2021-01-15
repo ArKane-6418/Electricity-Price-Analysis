@@ -1,0 +1,168 @@
+---
+title: "STA302 Final Project"
+author: "Joshua Ong"
+date: "04/08/2020"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+library(dplyr)
+library(tidyverse)
+library(ggplot2)
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+# Reading csv
+setwd("C:/Users/joshu/OneDrive/Documents/STA302/STA302 Final Project")
+Electricity_Data <- read.csv(file="Data_Removed_87.csv", header=TRUE, sep=",")
+colnames(Electricity_Data) <- c("Hour", "Expense", "OntarioDemand", "Weekday", "StatHoliday", "Peak", "Temperature")
+attach(Electricity_Data)
+
+n = length(Electricity_Data[,1])
+Y = cbind(Expense)
+X_1 = Hour
+X_2 = OntarioDemand
+X_2_sq = OntarioDemand^2
+X_3 = Weekday
+X_4 = StatHoliday
+X_5 = Peak
+X_6 = Temperature
+X_6_sq = Temperature^2
+X2_X6 = OntarioDemand*Temperature
+
+# Identity Column
+I=rep(1, nrow(Electricity_Data))
+
+# Matrix X
+X = cbind(I, X_1, X_2, X_2_sq, X_3, X_4, X_5, X_6, X_6_sq, X2_X6)
+
+# XTX Matrix
+XTX = t(X)%*%X
+
+# XY Matrix
+XTY = t(X)%*%Y
+
+# Beta
+beta = solve(XTX, tol = 1e-22)%*%XTY
+beta
+
+# Fitted regression surface
+fit = X%*%beta
+```
+
+```{r}
+
+ggplot(data=Electricity_Data, aes(x=Expense)) + geom_bar()
+
+```
+
+```{r}
+
+m_X_1 = X_1-mean(X_1)
+m_X_2 = X_2-mean(X_2)
+m_X_3 = X_3-mean(X_3)
+m_X_4 = X_4-mean(X_4)
+m_X_5 = X_5-mean(X_5)
+m_X_6 = X_6-mean(X_6)
+
+poly.fit_non_center <- lm(formula = Expense ~ X_1 + X_2 + X_3 + X_4 + X_5 + X_6 + X_2_sq + X_6_sq + X2_X6)
+summary(poly.fit_non_center)
+
+poly.fit_center <- lm(formula = Expense ~ m_X_1 + m_X_2 + m_X_3 + m_X_4 + m_X_5 + m_X_6 + I(m_X_2^2) + I(m_X_6^2) + I(m_X_2*m_X_6), data = Electricity_Data)
+
+summary(poly.fit_center)
+
+poly.fit1 <- lm(formula = Expense ~ m_X_1 + m_X_2 + m_X_5 + m_X_6 + I(m_X_2^2) + I(m_X_6^2) + I(m_X_2*m_X_6), data = Electricity_Data)
+summary(poly.fit1)
+
+poly.fit2 <- lm(formula = Expense ~ m_X_1 + m_X_2 + m_X_5 + m_X_6 + I(m_X_6^2) + I(m_X_2*m_X_6), data = Electricity_Data)
+summary(poly.fit2)
+
+poly.fit3 <- lm(formula = Expense ~ m_X_1 + m_X_2 + m_X_5 + m_X_6 + I(m_X_6^2), data = Electricity_Data)
+summary(poly.fit3)
+
+poly.fit4 <- lm(formula = Expense ~ X_1 + X_2 + X_5 + X_6, data = Electricity_Data)
+summary(poly.fit4)
+```
+
+
+```{r}
+# Assumption 4
+multi.stdres = rstandard(multi.fit)
+qqnorm(simple.stdres, 
+       ylab="Standardized Residuals", 
+       xlab="Normal Score", 
+       main="Normal Q-Q plot") 
+qqline(multi.stdres)
+
+
+```
+
+```{r}
+#Analyze Collinearity
+
+pairs(~ Expense + OntarioDemand + Weekday + StatHoliday + Peak + Temperature , data = Electricity_Data)
+
+simple.fit = lm(formula = Expense ~ Hour + OntarioDemand + Weekday + StatHoliday + Peak + Temperature, data = Electricity_Data)
+summary(simple.fit)
+
+
+```
+
+```{r}
+
+cor(cbind(Expense, X_1, X_2, X_3, X_4, X_5, X_6, X_2_sq, X_6_sq, X2_X6))
+
+```
+
+```{r}
+# AIC
+SSRes1 = sum(resid(poly.fit_non_center)^2)
+SSRes2 = sum(resid(poly.fit_center)^2)
+SSRes3 = sum(resid(poly.fit1)^2)
+SSRes4 = sum(resid(poly.fit2)^2)
+SSRes5 = sum(resid(poly.fit3)^2)
+SSRes6 = sum(resid(poly.fit4)^2)
+
+p_prime1 = length(coef(poly.fit_non_center))
+p_prime2 = length(coef(poly.fit_center))
+p_prime3 = length(coef(poly.fit1))
+p_prime4 = length(coef(poly.fit2))
+p_prime5 = length(coef(poly.fit3))
+p_prime6 = length(coef(poly.fit4))
+
+n*log(SSRes1) - n*log(n) + 2*p_prime1
+n*log(SSRes2) - n*log(n) + 2*p_prime2
+n*log(SSRes3) - n*log(n) + 2*p_prime3
+n*log(SSRes4) - n*log(n) + 2*p_prime4
+n*log(SSRes5) - n*log(n) + 2*p_prime5
+n*log(SSRes6) - n*log(n) + 2*p_prime6
+
+
+```
+
+```{r}
+# C
+n
+s = summary(multi.fit)$sigma
+
+C1 <- 1 - (SSRes1/s^2) + 2*p_prime1 - n
+C2 <- 1 - (SSRes2/s^2) + 2*p_prime2 - n
+C3 <- 1 - (SSRes3/s^2) + 2*p_prime3 - n
+C4 <- 1 - (SSRes4/s^2) + 2*p_prime4 - n
+C5 <- 1 - (SSRes5/s^2) + 2*p_prime5 - n
+C6 <- 1 - (SSRes6/s^2) + 2*p_prime6 - n
+
+C1
+C2
+C3
+C4
+C5
+C6
+
+
+
+```
