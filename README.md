@@ -39,16 +39,12 @@ We ensured our data set followed the four Gauss-Markov assumptions:
 
 After verifying the assumptions, we generated relevant matrices for calculating the optimal beta (coefficient) vector, the correlation matrix, and a pairs plot. From there, we discovered that Demand^2 and Temperature^2 were relevant predictor variables, thus giving us a polynomial regression. Then, we began our model selection process. Starting with all our variables, we first normalized all of our data. Then we performed backwards elimination to eliminate statistically insignificant variables, which we determined by looking at the corresponding p-values and checking if they were < 0.001. We continued this process until we were left with 4 predictor variables: HOEP, Demand, Peak Type, and Temperature. For each of our models, we calculated the residual sum of squares, adjusted R^2, Mallow's Cp Constant and AIC to evaluate them. Finally, we plotted a residual plot against our fitted values from the best model to determine if there was a pattern.
 
+The full report and analysis can be found [here](https://drive.google.com/file/d/1vhCSdP1bPPCIfStqZpIzu_8WU8I7gYBL/view?usp=sharing)
+
 ## Getting Started
 
 1. Clone this repo (for help see this [tutorial](https://help.github.com/articles/cloning-a-repository/)).
-2. Raw Data is being kept [here](Repo folder containing raw data) within this repo.
-
-    *If using offline data mention that and how they may obtain the data from the froup)*
+2. Raw Data is being kept [here](https://github.com/ArKane-6418/Electricity-Price-Analysis/blob/main/data/Data_Removed_87.csv) within this repo.
     
-3. Data processing/transformation scripts are being kept [here](Repo folder containing data processing scripts/notebooks)
-4. etc...
+3. Data processing/transformation scripts are being kept [here](https://github.com/ArKane-6418/Electricity-Price-Analysis/blob/main/R-Code/Analysis%20Final%20Project.Rmd)
 
-
-## Featured Notebooks/Analysis/Deliverables
-* [R code](link)
