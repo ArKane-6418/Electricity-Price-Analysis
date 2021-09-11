@@ -1,0 +1,203 @@
+---
+title: "Electricity Price Analysis"
+author: "Joshua Ong"
+date: "09/08/2021"
+output: html_document
+---
+
+# Load Data and Packages
+```{r setup, include=FALSE}
+if (!require(tidyverse)) install.packages("tidyverse")
+if (!require(ggmap)) install.packages("ggmap")
+if (!require(ggplot2)) install.packages("ggplot2")
+if (!require(dplyr)) install.packages("dplyr")
+if (!require(readr)) install.packages("readr")
+if (!require(tsbox)) install.packages("tsbox")
+if (!require(ggfortify)) install.packages("ggfortify")
+library(ggfortify)
+library(tsbox) # functions: ts_ts
+library(tidyverse)
+library(ggmap)
+library(ggplot2)
+library(dplyr)
+library(readr)
+```
+
+# Load Data
+```{r}
+setwd("INSERT WORKING DIRECTORY")
+Electricity_Data <- read.csv(file="Data_Removed_87.csv", header=TRUE, sep=",")
+colnames(Electricity_Data) <- c("Hour", "Expense", "OntarioDemand", "Weekday", "StatHoliday", "Peak", "Temperature")
+attach(Electricity_Data)
+```
+
+# Assumption 1
+```{r}
+# Fitted Values for Electricity Data - HOEP Y^hat
+# Explanatory Variables (Xi’s) and Response Variable (Y^hat)
+
+Y = cbind(Expense)
+X_1 = Hour
+X_2 = OntarioDemand
+X_2_sq = OntarioDemand^2
+X_3 = Weekday
+X_4 = StatHoliday
+X_5 = Peak
+X_6 = Temperature
+X_6_sq = Temperature^2
+X2_X6 = OntarioDemand*Temperature
+n = nrow(Electricity_Data)
+
+# Creating the multiple linear regression model using all the predictor variables
+multi.fit <- lm(formula = Expense ~ X_1 + X_2 + X_3 + X_4 + X_5 + X_6, data = Electricity_Data)
+
+# Generating the residuals for the model
+multi.res = resid(multi.fit)
+```
+
+# Dot Plot Graphs for Linearity Assumption
+```{r}
+# Residuals vs Hour (X_1)
+ggplot(Electricity_Data, aes(x = X_1, y = multi.res)) + geom_point() + geom_hline(yintercept = 0.0) + labs(y = "Residuals", x = "Hour") + ggtitle("Residuals vs Hours")
+
+# Residuals vs OntarioDemand (X_2)
+ggplot(Electricity_Data, aes(x = X_2, y = multi.res)) + geom_point() + geom_hline(yintercept = 0.0) + labs(y = "Residuals", x = "OntarioDemand") + ggtitle("Residuals vs Ontario Demand")
+
+# Residuals vs Weekday (X_3)
+ggplot(Electricity_Data, aes(x = X_3, y = multi.res)) + geom_point() + geom_hline(yintercept = 0.0) + labs(y = "Residuals", x = "Weekday") + ggtitle("Residuals vs Weekday")
+
+# Residuals vs Statutory Holiday (X_4)
+ggplot(Electricity_Data, aes(x = X_4, y = multi.res)) + geom_point() + geom_hline(yintercept = 0.0) + labs(y = "Residuals", x = "StatHoliday") + ggtitle("Residuals vs Statutory Holiday")
+
+# Residuals vs Peak (X_5)
+ggplot(Electricity_Data, aes(x = X_5, y = multi.res)) + geom_point() + geom_hline(yintercept = 0.0) + labs(y = "Residuals", x = "Peak") + ggtitle("Residuals vs Peak")
+
+# Residuals vs Temperature (X_6)
+ggplot(Electricity_Data, aes(x = X_6, y = multi.res)) + geom_point() + geom_hline(yintercept = 0.0) + labs(y = "Residuals", x = "Temperature") + ggtitle("Residuals vs Temperature")
+```
+
+# Assumption 2:
+```{r}
+# Generate a plot of the residuals vs the fitted values of the multiple linear regression model
+ggplot(Electricity_Data, aes(x = fitted(multi.fit), y = multi.res)) + geom_point() + geom_hline(yintercept = 0.0) + labs(y = "Residuals", x = "Fitted Values") + ggtitle("Residuals vs Fitted Values")
+```
+
+# Assumption 4:
+```{r}
+# Generate a Normal QQ plot by standardizing the residuals of the multiple linear regression model and plotting them against the normal scores
+
+multi.stdres = rstandard(multi.fit)
+qqnorm(multi.stdres, 
+       ylab="Standardized Residuals", 
+       xlab="Normal Scores", 
+       main="Normal Q-Q plot") 
+qqline(multi.stdres)
+```
+
+# Analyze Collinearity
+```{r}
+# Generate a pairs plot for all the variables
+pairs(~ Expense + Hour + OntarioDemand + Weekday + StatHoliday + Peak + Temperature , data = Electricity_Data )
+```
+
+#Model Selection
+```{r}
+# Calculate the means of each predictor variable to center them
+m_X_1 = X_1-mean(X_1)
+m_X_2 = X_2-mean(X_2)
+m_X_3 = X_3-mean(X_3)
+m_X_4 = X_4-mean(X_4)
+m_X_5 = X_5-mean(X_5)
+m_X_6 = X_6-mean(X_6)
+
+# Non-linear regression model involving all of the variables, including the interaction terms and quadratic terms
+poly.fit_non_center <- lm(formula = Expense ~ X_1 + X_2 + X_3 + X_4 + X_5 + X_6 + X_2_sq + X_6_sq + X2_X6)
+summary(poly.fit_non_center)
+
+# Non-linear regression model centering all of the variables by their mean
+poly.fit_center <- lm(formula = Expense ~ m_X_1 + m_X_2 + m_X_3 + m_X_4 + m_X_5 + m_X_6 + I(m_X_2^2) + I(m_X_6^2) + I(m_X_2*m_X_6), data = Electricity_Data)
+summary(poly.fit_center)
+
+# Non-linear regression model removing Weekday and StatHoliday
+poly.fit1 <- lm(formula = Expense ~ m_X_1 + m_X_2 + m_X_5 + m_X_6 + I(m_X_2^2) + I(m_X_6^2) + I(m_X_2*m_X_6), data = Electricity_Data)
+summary(poly.fit1)
+
+# Non-linear regression model removing the squared X_2 term
+poly.fit2 <- lm(formula = Expense ~ m_X_1 + m_X_2 + m_X_5 + m_X_6 + I(m_X_6^2) + I(m_X_2*m_X_6), data = Electricity_Data)
+summary(poly.fit2)
+
+# Linear regression model removing the squared X_6 term and interaction term
+poly.fit3 <- lm(formula = Expense ~ X_1 + X_2 + X_5 + X_6, data = Electricity_Data)
+summary(poly.fit3)
+```
+
+# AIC
+```{r}
+# Calculating SSRes for each of our models
+SSRes1 = sum(resid(poly.fit_non_center)^2)
+SSRes2 = sum(resid(poly.fit_center)^2)
+SSRes3 = sum(resid(poly.fit1)^2)
+SSRes4 = sum(resid(poly.fit2)^2)
+SSRes5 = sum(resid(poly.fit3)^2)
+
+#Calculating p’ for each of our models
+p_prime1 = length(coef(poly.fit_non_center))
+p_prime2 = length(coef(poly.fit_center))
+p_prime3 = length(coef(poly.fit1))
+p_prime4 = length(coef(poly.fit2))
+p_prime5 = length(coef(poly.fit3))
+
+# Solving for the AIC of each model
+n*log(SSRes1) - n*log(n) + 2*p_prime1
+n*log(SSRes2) - n*log(n) + 2*p_prime2
+n*log(SSRes3) - n*log(n) + 2*p_prime3
+n*log(SSRes4) - n*log(n) + 2*p_prime4
+n*log(SSRes5) - n*log(n) + 2*p_prime5
+```
+
+# Mallow’s C Criterion
+```{r}
+# Standard error of the multiple linear regression model
+s = summary(multi.fit)$sigma
+
+# Calculating each Mallow’s Criterion 
+C1 = (SSRes1/s^2) + 2*p_prime1 - n
+C2 = (SSRes2/s^2) + 2*p_prime2 - n
+C3 = (SSRes3/s^2) + 2*p_prime3 - n
+C4 = (SSRes4/s^2) + 2*p_prime4 - n
+C5 = (SSRes5/s^2) + 2*p_prime5 - n
+```
+
+# Correlation Matrix
+```{r}
+# Bind the vectors for all the variables into one matrix and solve for the correlation
+cor(cbind(Expense, X_1, X_2, X_3, X_4, X_5, X_6, X_2_sq, X_6_sq, X2_X6))
+```
+
+
+# All Important Matrices
+```{r}
+# Identity Column
+I=rep(1, n)
+
+# Matrix X (bind all the vectors for the variables into one matrix)
+X = cbind(I, X_1, X_2, X_2_sq, X_3, X_4, X_5, X_6, X_6_sq, X2_X6)
+
+# XTX Matrix (The transpose of X multiplied by X)
+XTX = t(X)%*%X
+
+# XY Matrix (transpose of X multiplied by the Y column vector
+XTY = t(X)%*%Y
+
+#Beta (= (X’X)-1 X’Y)
+beta = solve(XTX, tol = 5.96981e-22)%*%XTY
+
+# Fitted regression surface (Y = X)
+fit = X%*%beta
+```
+
+# Residual Plot for Selected Model
+```{r}
+# Generation of Residual Plot
+ggplot(Electricity_Data, aes(x = fitted(poly.fit3), y = resid(poly.fit3))) + geom_point() + geom_hline(yintercept = 0.0) + labs(y = "Residuals", x = "Fitted Values") + ggtitle("Residuals vs Fitted Values")
+```
