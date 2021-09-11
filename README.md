@@ -22,7 +22,7 @@ valuable for consumers but it is critical for the operational planning and tradi
 
 ## Project Description
 
-We got our data from the [Independent Electricity System Operator (IESO) public website](http://reports.ieso.ca/public/Demand/) and [yesenergy](https://www.yesenergy.com/). We looked at the data from 2019 to make predictions about the demand and most impactful predictor variables for electricity prices in 2020. Our model was developed using a multiple linear regression analysis. We used the following predictor variables to predict the outcome of our response variable (YHourly Ontario Electricity Price (HOEP) (measured in $/MW)):
+We got our data from the [Independent Electricity System Operator (IESO) public website](http://reports.ieso.ca/public/Demand/) and [yesenergy](https://www.yesenergy.com/). We looked at the data from 2019 to make predictions about the demand and most impactful predictor variables for electricity prices in 2020. Our model was developed using a multiple linear regression analysis. We used the following predictor variables to predict the outcome of our response variable (Y: Hourly Ontario Electricity Price (HOEP) (measured in $/MW)):
 * X<sub>1<\sub>: Hour (1-24)
 * X<sub>2<\sub>: Ontario Demand (measured in MW)
 * X<sub>3<\sub>: Weekend/Weekday (binary data, 0 for weekday, 1 for weekend)
